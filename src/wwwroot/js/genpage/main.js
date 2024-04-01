@@ -876,6 +876,14 @@ function describeImage(image) {
             is_download: true
         },
         {
+            label: 'Download as Video',
+            onclick: (e) => {
+                // Insert the image into the modal
+                $('#image_as_video_modal .modal-image').html(`<img src="${image.data.src}" class="img-fluid" alt="Source Image"/>`);
+                $('#image_as_video_modal').modal('show');
+            }
+        },
+        {
             label: 'Delete',
             onclick: (e) => {
                 genericRequest('DeleteImage', {'path': image.data.fullsrc}, data => {

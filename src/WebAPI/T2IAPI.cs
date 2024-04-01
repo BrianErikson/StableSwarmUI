@@ -1,4 +1,9 @@
-﻿using FreneticUtilities.FreneticExtensions;
+﻿using FFMpegCore;
+using FFMpegCore.Arguments;
+using FFMpegCore.Enums;
+using FFMpegCore.Helpers;
+using FFMpegCore.Pipes;
+using FreneticUtilities.FreneticExtensions;
 using FreneticUtilities.FreneticToolkit;
 using Newtonsoft.Json.Linq;
 using SixLabors.ImageSharp;
@@ -11,6 +16,7 @@ using StableSwarmUI.Utils;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
@@ -30,6 +36,7 @@ public static class T2IAPI
         API.RegisterAPICall(ListImages);
         API.RegisterAPICall(ToggleImageStarred);
         API.RegisterAPICall(OpenImageFolder);
+        API.RegisterAPICall(ImageAsVideo);
         API.RegisterAPICall(DeleteImage);
         API.RegisterAPICall(ListT2IParams);
         API.RegisterAPICall(TriggerRefresh);
@@ -124,7 +131,7 @@ public static class T2IAPI
             setError(ex.Message);
             return;
         }
-        Logs.Info($"User {session.User.UserID} requested {images} image{(images == 1 ? "": "s")} with model '{user_input.Get(T2IParamTypes.Model)?.Name}'...");
+        Logs.Info($"User {session.User.UserID} requested {images} image{(images == 1 ? "" : "s")} with model '{user_input.Get(T2IParamTypes.Model)?.Name}'...");
         List<T2IEngine.ImageOutput> imageSet = [];
         List<Task> tasks = [];
         void removeDoneTasks()
@@ -394,6 +401,213 @@ public static class T2IAPI
             return new JObject() { ["error"] = "Cannot open image folder on this OS." };
         }
         return new JObject() { ["success"] = true };
+    }
+
+    private static bool GenerateVideoFromImages(
+        MemoryStream videoStream, 
+        string[] files, 
+        double duration, 
+        double fps, 
+        int width, 
+        int height, 
+        Func<double, int, double> durationScalarFn)
+    {
+        double averageFrameDuration = duration / files.Length;
+        var videoSink = new StreamPipeSink(videoStream);
+        for (int i = 0; i < files.Length; i++)
+        {
+            string imagePath = files[i];
+
+            var fileDuration = averageFrameDuration * durationScalarFn(i, files.Length);
+
+            var frameCount = (int)Math.Round(fps * fileDuration);
+            if (frameCount <= 0)
+            {
+                Logs.Info($"{i + 1}/{files.Length}");
+                continue;
+            }
+
+            var beginCursor = videoStream.Position;
+
+            // Create a video from the image with the desired duration
+            var result = FFMpegArguments
+                .FromFileInput(imagePath, false)
+                .OutputToPipe(videoSink, options => options
+                    .WithVideoCodec(VideoCodec.LibVpx)
+                    .ForceFormat("matroska")
+                ).ProcessSynchronously();
+
+            if (!result)
+            {
+                Logs.Error($"Failed to generate video from image '{imagePath}'.");
+                return false;
+            }
+
+            var endCursor = videoStream.Position;
+
+            // duplicate the data to create the desired frame count
+            for (int j = 0; j < frameCount - 1; j++)
+            {
+                videoStream.Write(videoStream.GetBuffer(), (int)beginCursor, (int)(endCursor - beginCursor));
+            }
+
+            Logs.Info($"durationScalarFn({i}, {files.Length}) = {durationScalarFn(i, files.Length)}, averageFrameDuration = {averageFrameDuration}, fileDuration = {fileDuration}, frameCount = {frameCount}");
+            //Logs.Info($"{i + 1}/{files.Length}");
+        }
+
+        return true;
+    }
+
+    /// <summary>API route to download a series of images as a video.</summary>
+    public static async Task<JObject> ImageAsVideo(
+        Session session, 
+        string path, 
+        string frameEffect, 
+        string frameEffectShape, 
+        int duration)
+    {
+        // print out all the parameters
+        Logs.Info($"User {session.User.UserID} requested to generate a video from image path '{path}' with frame effect '{frameEffect}', shape '{frameEffectShape}', duration {duration}s");
+
+        const double FPS = 30000/1001; // 29.97 FPS, the standard for mp4 videos
+
+        if (duration <= 0)
+        {
+            Logs.Warning($"User {session.User.UserID} requested to generate a video from image path '{path}' with frame effect '{frameEffect}', shape '{frameEffectShape}', but the duration is 0 or negative, setting to 10s.");
+            duration = 10;
+        }
+        double periodDuration = duration;
+        if (frameEffect == "ping-pong")
+        {
+            periodDuration *= 0.5;
+        }
+
+        // TODO: Lift this shared logic into a shared helper method -- see OpenImageFolder for similar code.
+        string origPath = path;
+        string root = Utilities.CombinePathWithAbsolute(Environment.CurrentDirectory, session.User.OutputDirectory);
+        (path, string consoleError, string userError) = WebServer.CheckFilePath(root, path);
+        if (consoleError is not null)
+        {
+            Logs.Error(consoleError);
+            return new JObject() { ["error"] = userError };
+        }
+        if (!File.Exists(path))
+        {
+            Logs.Warning($"User {session.User.UserID} tried to open image path '{origPath}' which maps to '{path}', but cannot as the image does not exist.");
+            return new JObject() { ["error"] = "That file does not exist, cannot open." };
+        }
+        //
+
+        // if the path extension is not in the ImageExtensions list, return an error
+        if (!ImageExtensions.Contains(path.AfterLast('.').ToLower()))
+        {
+            Logs.Warning($"User {session.User.UserID} tried to generate a video from an image path '{origPath}' which maps to '{path}', but cannot as the file is not an image.");
+            return new JObject() { ["error"] = "That file is not an image, cannot generate video." };
+        }
+
+        // Analyse the provided image to get the output video resolution
+        var image = ISImage.Load(path);
+        var inputWidth = image.Width;
+        var inputHeight = image.Height;
+
+        // Gather up a list of all the images in the folder and subfolders (recursive)
+        string ext = path.AfterLast('.').ToLower();
+        string folder = Path.GetDirectoryName(path);
+        string[] files = Directory.GetFiles(folder, $"*.{ext}", SearchOption.TopDirectoryOnly)
+            // Filter out files that are not the same resolution as the input image
+            .Where(f => {
+                var img = ISImage.Load(f);
+                return img.Width == inputWidth && img.Height == inputHeight;
+            })
+            .ToArray();
+
+        // if there are not enough images in the folder or subfolders, return an error
+        if (files.Length < 2)
+        {
+            Logs.Warning($"User {session.User.UserID} tried to generate a video from an image path '{origPath}' which maps to '{path}', but cannot as there are not enough images of that extension and resolution in the folder or subfolders.");
+            return new JObject() { ["error"] = "There are not enough images of that extension and resolution in the current folder and subfolders to generate a video." };
+        }
+
+        // Sort the files by date of creation, so that the video is in the correct order.
+        Array.Sort(files, (a, b) => File.GetCreationTime(a).CompareTo(File.GetCreationTime(b)));
+
+        // Determine the maximum amount of images that can be displayed in the given duration
+        int maxImages = (int)(periodDuration * FPS);
+        // Ensure the `files` count is less than the `maxImages` by filtering
+        if (files.Length > maxImages)
+        {
+            // Remove images evenly over the list to match the maxImages count
+            var step = files.Length / maxImages;
+            files = files.Where((_, i) => i % step == 0).ToArray();
+            // If the files count is still greater than the maxImages, remove the difference from the middle
+            if (files.Length > maxImages)
+            {
+                var mid = files.Length / 2;
+                var midStep = (int)Math.Round(Math.Max(1, (files.Length - maxImages) / 2.0));
+                files = files.Where((_, i) => i < mid - midStep || i > mid + midStep).ToArray();
+            }
+        }
+
+        // Assign a generator function for the duration scalar based on the frame effect shape
+        // These act as a magnitude scalar for the duration of each frame based on the linear frame duration average
+        Func<double, int, double> durationScalarFn = (double x, int waveLength) => 1.0;
+        if (frameEffectShape == "rounded")
+        {
+            // An inverted bell curve function, where the result is 1.5 at the start and end of the period, and 0.5 at the midpoint
+            durationScalarFn = (double x, int waveLength) => {
+                // normalize the x value to be between -1 and 1, where 0 is the midpoint of the wave
+                var normX = ((x / waveLength) * 2) - 1;
+                return -1 * (Math.Pow(normX, 4) - (2 * Math.Pow(normX, 2))) + 0.5;
+            };
+        }
+
+        // Now, use the FFMpegCore library to generate a video from the images
+        await using var videoStream = new MemoryStream();
+        if (frameEffect == "ping-pong" || frameEffect == "ping")
+        {
+            if (!GenerateVideoFromImages(videoStream, files, periodDuration, FPS, inputWidth, inputHeight, durationScalarFn))
+            {
+                return new JObject() { ["error"] = "Failed to generate ping video." };
+            }
+        }
+
+        if (frameEffect == "ping-pong" || frameEffect == "pong")
+        {
+            if (!GenerateVideoFromImages(videoStream, files.Reverse().ToArray(), periodDuration, FPS, inputWidth, inputHeight, durationScalarFn))
+            {
+                return new JObject() { ["error"] = "Failed to generate pong video." };
+            }
+        }
+
+        // Output the video stream to a file
+        videoStream.Position = 0;
+        string outputVideoPath = Path.Combine(folder, $"{Path.GetFileNameWithoutExtension(files[0])}.mp4");
+        if (File.Exists(outputVideoPath))
+        {
+            File.Delete(outputVideoPath);
+        }
+
+        var concatResult = FFMpegArguments
+            .FromPipeInput(new StreamPipeSource(videoStream), options => options
+                .WithVideoCodec(VideoCodec.LibVpx)
+                .ForceFormat("matroska")
+                .WithFramerate(FPS)
+            ).OutputToFile(outputVideoPath, true, options => options
+                .WithVideoCodec(VideoCodec.LibX264)
+                .WithFastStart()
+            ).ProcessSynchronously();
+
+        if (concatResult)
+        {
+            // Return the path of the output video
+            var wwwrootPath = outputVideoPath.Replace('\\', '/').Replace(root.Replace('\\', '/'), "").TrimStart('/');
+            return new JObject() { ["video"] = wwwrootPath };
+        }
+        else
+        {
+            Logs.Error($"Failed to generate video from images.");
+            return new JObject() { ["error"] = "Failed to generate video." };
+        }
     }
 
     /// <summary>API route to delete an image.</summary>

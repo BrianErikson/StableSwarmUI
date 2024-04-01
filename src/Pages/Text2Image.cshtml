@@ -269,6 +269,61 @@
                     <div style="height: 10rem"></div> <!-- Spacer -->
                 </div>
             </div>
+            @WebUtil.ModalHeader("image_as_video_modal", "Save Image Sequence as Video")
+                <div class="modal-body">
+                    <!-- For whatever reason, $().html() 'eats' the parent container when rendered, so we have to wrap it in a div -->
+                    <div>
+                        <div class="modal-image"/>
+                    </div>
+                    <div class="container">
+                        <div class="row">
+                            <p class="translate"> Select a frame timecode transformation effect</p>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="btn-group" data-toggle="buttons">
+                                    <label class="btn btn-primary">
+                                        <input type="radio" name="frame-effect" id="ping" autocomplete="off" checked> Ping
+                                    </label>
+                                    <label class="btn btn-primary">
+                                        <input type="radio" name="frame-effect" id="pong" autocomplete="off"> Pong
+                                    </label>
+                                    <label class="btn btn-primary">
+                                        <input type="radio" name="frame-effect" id="ping-pong" autocomplete="off"> Ping Pong
+                                    </label>
+                                </div>  
+                            </div>
+                        </div>
+                        <div class="row">
+                            <p class="translate"> Select a frame timecode transformation effect shape</p>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <div class="btn-group" data-toggle="buttons">
+                                    <label class="btn btn-primary">
+                                        <input type="radio" name="frame-effect-shape" id="linear" autocomplete="off" checked> Linear
+                                    </label>
+                                    <label class="btn btn-primary">
+                                        <input type="radio" name="frame-effect-shape" id="rounded" autocomplete="off"> Rounded
+                                    </label>
+                                </div>  
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <p class="translate">Video Duration (Seconds)</p>
+                            </div>
+                            <div class="col">
+                                <input type="number" id="video-duration-input" class="modal_text_extra translate" placeholder="10" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary basic-button translate" onclick="save_video_waveform()">Save</button>
+                    <button type="button" class="btn btn-secondary translate" onclick="close_image_as_video_modal()">Cancel</button>
+                </div>
+            @WebUtil.ModalFooter()
             @WebUtil.ModalHeader("edit_model_modal", """Edit Model Metadata: <input type="text" class="modal_text_extra" id="edit_model_name" placeholder="Model Name" />""")
                 <div class="modal-body">
                     <div>Author: <input type="text" id="edit_model_author" class="modal_text_extra translate" placeholder="Model Author" /></div>
@@ -657,6 +712,7 @@
     <script src="/js/genpage/image_editor.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/main.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/settings_editor.js?vary=@Utilities.VaryID"></script>
+    <script src="/js/genpage/image_as_video_editor.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/logs.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/ui_improvements.js?vary=@Utilities.VaryID"></script>
     @WebServer.PageFooterExtra
