@@ -1,13 +1,14 @@
 ﻿using FFMpegCore;
-using FFMpegCore.Arguments;
 using FFMpegCore.Enums;
-using FFMpegCore.Helpers;
+using FFMpegCore.Extensions.SkiaSharp;
 using FFMpegCore.Pipes;
 using FreneticUtilities.FreneticExtensions;
 using FreneticUtilities.FreneticToolkit;
+using Microsoft.AspNetCore.Mvc.TagHelpers;
 using Newtonsoft.Json.Linq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 using StableSwarmUI.Accounts;
 using StableSwarmUI.Backends;
 using StableSwarmUI.Core;
@@ -403,6 +404,45 @@ public static class T2IAPI
         return new JObject() { ["success"] = true };
     }
 
+    private static IEnumerable<IVideoFrame> CreateFrames(
+        string[] files, 
+        double duration, 
+        double fps, 
+        int width, 
+        int height, 
+        Func<double, int, double> durationScalarFn)
+    {
+        int targetFrameCount = (int)Math.Round(fps * duration);
+        int frameCountTotal = 0;
+        double averageFrameDuration = duration / files.Length;
+        for (int i = 0; i < files.Length; i++)
+        {
+            var fileDuration = averageFrameDuration * durationScalarFn(i, files.Length);
+            var frameCount = (int)Math.Round(fps * fileDuration);
+
+            // Pad the last frame to reach the target frame count
+            if (i == files.Length - 1 && frameCountTotal < targetFrameCount)
+            {
+                frameCount += targetFrameCount - frameCountTotal;
+            }
+            if (frameCount <= 0)
+            {
+                Logs.Info($"{i + 1}/{files.Length}");
+                continue;
+            }
+
+            Logs.Info($"durationScalarFn: {durationScalarFn(i, files.Length)}, averageFrameDuration = {averageFrameDuration}, fileDuration = {fileDuration}, frameCount = {frameCount}");
+
+            using var stream = File.OpenRead(files[i]);
+            var bitmap = SKBitmap.Decode(stream);
+            for (int j = 0; j < frameCount; j++)
+            {
+                yield return new BitmapVideoFrameWrapper(bitmap);
+            }
+            frameCountTotal += frameCount;
+        }
+    }
+
     private static bool GenerateVideoFromImages(
         MemoryStream videoStream, 
         string[] files, 
@@ -412,50 +452,18 @@ public static class T2IAPI
         int height, 
         Func<double, int, double> durationScalarFn)
     {
-        double averageFrameDuration = duration / files.Length;
+        const int bitrate = 8000; // 8 Mbps, recommended by Google for 1080p videos
+
         var videoSink = new StreamPipeSink(videoStream);
-        for (int i = 0; i < files.Length; i++)
-        {
-            string imagePath = files[i];
+        var frameSource = new RawVideoPipeSource(CreateFrames(files, duration, fps, width, height, durationScalarFn));
+        var res = FFMpegArguments
+            .FromPipeInput(frameSource)
+            .OutputToPipe(videoSink, options => options
+                .WithVideoBitrate(bitrate)
+                .ForceFormat("mpegts")
+            ).ProcessSynchronously();
 
-            var fileDuration = averageFrameDuration * durationScalarFn(i, files.Length);
-
-            var frameCount = (int)Math.Round(fps * fileDuration);
-            if (frameCount <= 0)
-            {
-                Logs.Info($"{i + 1}/{files.Length}");
-                continue;
-            }
-
-            var beginCursor = videoStream.Position;
-
-            // Create a video from the image with the desired duration
-            var result = FFMpegArguments
-                .FromFileInput(imagePath, false)
-                .OutputToPipe(videoSink, options => options
-                    .WithVideoCodec(VideoCodec.LibVpx)
-                    .ForceFormat("matroska")
-                ).ProcessSynchronously();
-
-            if (!result)
-            {
-                Logs.Error($"Failed to generate video from image '{imagePath}'.");
-                return false;
-            }
-
-            var endCursor = videoStream.Position;
-
-            // duplicate the data to create the desired frame count
-            for (int j = 0; j < frameCount - 1; j++)
-            {
-                videoStream.Write(videoStream.GetBuffer(), (int)beginCursor, (int)(endCursor - beginCursor));
-            }
-
-            Logs.Info($"durationScalarFn({i}, {files.Length}) = {durationScalarFn(i, files.Length)}, averageFrameDuration = {averageFrameDuration}, fileDuration = {fileDuration}, frameCount = {frameCount}");
-            //Logs.Info($"{i + 1}/{files.Length}");
-        }
-
-        return true;
+        return res;
     }
 
     /// <summary>API route to download a series of images as a video.</summary>
@@ -547,6 +555,7 @@ public static class T2IAPI
                 files = files.Where((_, i) => i < mid - midStep || i > mid + midStep).ToArray();
             }
         }
+        Logs.Info($"periodDuration = {periodDuration}, FPS = {FPS}, maxImages = {maxImages}, files.Length = {files.Length}");
 
         // Assign a generator function for the duration scalar based on the frame effect shape
         // These act as a magnitude scalar for the duration of each frame based on the linear frame duration average
@@ -589,8 +598,7 @@ public static class T2IAPI
 
         var concatResult = FFMpegArguments
             .FromPipeInput(new StreamPipeSource(videoStream), options => options
-                .WithVideoCodec(VideoCodec.LibVpx)
-                .ForceFormat("matroska")
+                .ForceFormat("mpegts")
                 .WithFramerate(FPS)
             ).OutputToFile(outputVideoPath, true, options => options
                 .WithVideoCodec(VideoCodec.LibX264)

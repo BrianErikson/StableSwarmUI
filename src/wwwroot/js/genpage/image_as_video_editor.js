@@ -18,7 +18,7 @@ function save_video_waveform() {
     imagePath = imagePath.replace('View/local/', '');
 
     var duration = $('#video-duration-input').val();
-    if (isNaN(duration)) {
+    if (duration === '' || isNaN(duration) || duration < 1) {
         duration = 10;
     }
 
@@ -35,21 +35,8 @@ function save_video_waveform() {
             return;
         }
 
-        var lastSlash = Math.max(data.video.lastIndexOf('/'), data.video.lastIndexOf('\\'));
-        var fileName = data.video.substring(lastSlash + 1, data.video.lastIndexOf('.'));
-
-        var relPath = 'View/local/' + data.video;
-
         // replace the modal-image with the video
-        $('#image_as_video_modal .modal-image').html(`<video controls autoplay loop class="img-fluid"><source class="modal-image" data-src="${imagePath}" src="${relPath}" type="video/mp4"></video>`);
-
-        // convert the relative path to an absolute path
-        var url = window.location.href;
-        var absPath = url.substring(0, url.lastIndexOf('/')) + '/' + relPath;
-
-        // TODO fix this
-        //$('#image_as_video_modal').modal('hide');
-        //download_data(absPath, fileName, 'video/mp4');
+        $('#image_as_video_modal .modal-image').html(`<video controls autoplay loop class="img-fluid"><source class="modal-image" data-src="${imagePath}" src="${'View/local/' + data.video}" type="video/mp4"></video>`);
     });
 }
 
