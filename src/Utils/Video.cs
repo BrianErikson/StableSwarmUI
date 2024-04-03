@@ -47,7 +47,6 @@ public class Video {
             }
             if (frameCount <= 0)
             {
-                Logs.Info($"{i + 1}/{files.Length}");
                 continue;
             }
 
@@ -60,7 +59,6 @@ public class Video {
                 yield return new BitmapVideoFrameWrapper(bitmap);
             }
             frameCountTotal += frameCount;
-            Logs.Info($"{i + 1}/{files.Length}");
         }
     }
 
@@ -195,13 +193,19 @@ public class Video {
             periodDuration *= 0.5;
         }
 
+        // start timing
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
         // Analyse the provided image to get the output video resolution
         var image = ISImage.Load(inputPath);
         var inputWidth = image.Width;
         var inputHeight = image.Height;
+        string ext = inputPath.AfterLast('.').ToLower();
+
+        // Print image wxh extension and parent folder of inputPath
+        Logs.Info($"Generating video ({inputWidth}x{inputHeight} {ext}): {Path.GetDirectoryName(inputPath)}");
 
         // Gather up a list of all the images in the current folder
-        string ext = inputPath.AfterLast('.').ToLower();
         string folder = Path.GetDirectoryName(inputPath);
         string[] files = Directory.GetFiles(folder, $"*.{ext}", SearchOption.TopDirectoryOnly)
             // Filter out files that are not the same resolution as the input image
@@ -277,6 +281,11 @@ public class Video {
         }
 
         var concatResult = ToFile(videoStream, outputPath, frameSmoothing, FPS);
+
+        // stop timing
+        watch.Stop();
+        Logs.Info($"Video generated in {watch.Elapsed.TotalSeconds:0.00} seconds.");
+
         if (concatResult)
         {
             // Return the path of the output video relative to the wwwroot

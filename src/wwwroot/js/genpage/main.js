@@ -876,11 +876,16 @@ function describeImage(image) {
             is_download: true
         },
         {
-            label: 'Download as Video',
+            label: 'View as Video',
             onclick: (e) => {
                 // Insert the image into the modal
                 $('#image_as_video_modal .modal-image').html(`<img src="${image.data.src}" class="img-fluid" alt="Source Image"/>`);
                 $('#image_as_video_modal').modal('show');
+
+                // If the stored duration is 3 seconds or less and can be rendered quickly, render the video automatically
+                if (get_video_duration_input() <= 3 && get_frame_smoothing_input() !== 'quality') {
+                    render_video();
+                }
             }
         },
         {
