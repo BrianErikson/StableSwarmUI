@@ -7,7 +7,7 @@ function video_waveform_reflect_toggled() {
 
 }
 
-function save_video_waveform() {
+function compute_video_waveform() {
     // Get the image path from the modal-image class
     var imagePath = $('#image_as_video_modal').find('.modal-image img').attr('src');
     if (imagePath === undefined) {
@@ -27,10 +27,10 @@ function save_video_waveform() {
         'path': imagePath, 
         'frameEffect': $('input[name="frame-effect"]:checked').attr('id'), 
         'frameEffectShape': $('input[name="frame-effect-shape"]:checked').attr('id'), 
-        'duration': duration,
+        'frameSmoothing': $('input[name="frame-smoothing"]:checked').attr('id'),
+        'duration': duration
     }, data => {
         if (data.error) {
-            // TODO: What is the standard way to handle errors in this project?
             console.log(data.error);
             return;
         }

@@ -108,6 +108,7 @@ public class Video {
     public static bool ToFile(
         MemoryStream videoStream,
         string outputVideoPath,
+        string frameSmoothing,
         double fps
     )
     {
@@ -118,18 +119,30 @@ public class Video {
             File.Delete(outputVideoPath);
         }
 
+        var customArgs = "";
+        if (frameSmoothing == "fast")
+        {
+            customArgs = $"-vf minterpolate='fps={fps}:mi_mode=blend'";
+        }
+        else if (frameSmoothing == "quality")
+        {
+            customArgs = $"-vf minterpolate='fps={fps}:mi_mode=mci'";
+        }
+
         return FFMpegArguments
             .FromPipeInput(new StreamPipeSource(videoStream), options => options
                 .ForceFormat("mpegts")
-                .WithFramerate(fps)
             ).OutputToFile(outputVideoPath, true, options => options
+                .WithCustomArgument(customArgs)
                 .WithVideoCodec(VideoCodec.LibX264)
+                .UsingMultithreading(true)
                 .WithFastStart()
             ).ProcessSynchronously();
     }
 
     public static string[] frameEffects = ["ping", "pong", "ping-pong"];
     public static string[] frameEffectShapes = ["linear", "rounded"];
+    public static string[] frameSmoothingOptions = ["off", "fast", "quality"];
 
     /// <summary>
     /// Generates a video from a sequence of images.
@@ -139,6 +152,7 @@ public class Video {
     /// <param name="outputPath">The path where the output video will be saved.</param>
     /// <param name="frameEffect">The frame effect to apply to the video (e.g., "ping-pong", "ping", "pong").</param>
     /// <param name="frameEffectShape">The shape of the frame effect (e.g., "rounded").</param>
+    /// <param name="frameSmoothing">A boolean value indicating whether to apply frame smoothing to the video.</param>
     /// <param name="duration">The duration of the video in seconds.</param>
     /// <returns>A <see cref="JObject"/> containing the path of the generated video or an error message.</returns>
     public static async Task<JObject> ImageAsVideo(
@@ -147,7 +161,9 @@ public class Video {
         string outputPath,
         string frameEffect, 
         string frameEffectShape, 
-        int duration)
+        string frameSmoothing,
+        int duration
+        )
     {
         const double FPS = 30000/1001; // 29.97 FPS, the standard for mp4 videos
 
@@ -260,7 +276,7 @@ public class Video {
             File.Delete(outputPath);
         }
 
-        var concatResult = ToFile(videoStream, outputPath, FPS);
+        var concatResult = ToFile(videoStream, outputPath, frameSmoothing, FPS);
         if (concatResult)
         {
             // Return the path of the output video relative to the wwwroot

@@ -275,53 +275,76 @@
                     <div>
                         <div class="modal-image"/>
                     </div>
-                    <div class="container">
-                        <div class="row">
-                            <p class="translate"> Select a frame timecode transformation effect</p>
-                        </div>
-                        <div class="row">
-                            <div class="col">
-                                <div class="btn-group" data-toggle="buttons">
-                                    <label class="btn btn-primary">
-                                        <input type="radio" name="frame-effect" id="ping" autocomplete="off" checked> Ping
-                                    </label>
-                                    <label class="btn btn-primary">
-                                        <input type="radio" name="frame-effect" id="pong" autocomplete="off"> Pong
-                                    </label>
-                                    <label class="btn btn-primary">
-                                        <input type="radio" name="frame-effect" id="ping-pong" autocomplete="off"> Ping Pong
-                                    </label>
-                                </div>  
+                    
+                    <div class="input-group mb-3">
+                        <div class="container p-3">
+                            <div class="row mb-3 align-items-center">
+                                <div class="col-4">
+                                    <b class="translate">Frame Effect</b>
+                                </div>
+                                <div class="col-8">
+                                    <div class="btn-group" data-toggle="buttons">
+                                        <label class="basic-button btn btn-primary">
+                                            <input type="radio" name="frame-effect" id="ping" autocomplete="off" checked> Ping
+                                        </label>
+                                        <label class="basic-button btn btn-primary">
+                                            <input type="radio" name="frame-effect" id="pong" autocomplete="off"> Pong
+                                        </label>
+                                        <label class="basic-button btn btn-primary">
+                                            <input type="radio" name="frame-effect" id="ping-pong" autocomplete="off"> Ping Pong
+                                        </label>
+                                    </div>  
+                                </div>
                             </div>
-                        </div>
-                        <div class="row">
-                            <p class="translate"> Select a frame timecode transformation effect shape</p>
-                        </div>
-                        <div class="row">
-                            <div class="col">
-                                <div class="btn-group" data-toggle="buttons">
-                                    <label class="btn btn-primary">
-                                        <input type="radio" name="frame-effect-shape" id="linear" autocomplete="off" checked> Linear
-                                    </label>
-                                    <label class="btn btn-primary">
-                                        <input type="radio" name="frame-effect-shape" id="rounded" autocomplete="off"> Rounded
-                                    </label>
-                                </div>  
+                            <div class="row mb-3 align-items-center">
+                                <div class="col-4">
+                                    <b class="translate">Frame Effect Shape</b>
+                                </div>
+                                <div class="col-8">
+                                    <div class="btn-group" data-toggle="buttons">
+                                        <label class="btn btn-primary basic-button">
+                                            <input type="radio" name="frame-effect-shape" id="linear" autocomplete="off" checked> Linear
+                                        </label>
+                                        <label class="btn btn-primary basic-button">
+                                            <input type="radio" name="frame-effect-shape" id="rounded" autocomplete="off"> Rounded
+                                        </label>
+                                    </div>  
+                                </div>
                             </div>
-                        </div>
-                        <div class="row">
-                            <div class="col">
-                                <p class="translate">Video Duration (Seconds)</p>
+                            <div class="row mb-3 align-items-center">
+                                <div class="col-4">
+                                    <b class="translate">Frame Smoothing</b>
+                                </div>
+                                <div class="col-8">
+                                    <div class="btn-group" data-toggle="buttons">
+                                        <label class="btn btn-primary basic-button">
+                                            <input type="radio" name="frame-smoothing" id="off" autocomplete="off"> Off
+                                        </label>
+                                        <label class="btn btn-primary basic-button">
+                                            <input type="radio" name="frame-smoothing" id="fast" autocomplete="off" checked> Fast
+                                        </label>
+                                        <label class="btn btn-primary basic-button">
+                                            <input type="radio" name="frame-smoothing" id="quality" autocomplete="off"> Quality
+                                        </label>
+                                    </div>  
+                                </div>
                             </div>
-                            <div class="col">
-                                <input type="number" id="video-duration-input" class="modal_text_extra translate" placeholder="10" />
+                            <div class="row mb-3">
+                                <div class="col-4">
+                                    <b class="translate">Video Duration (Seconds)</b>
+                                </div>
+                                <div class="col-2">
+                                    <input type="number" id="video-duration-input" class="modal_text_extra translate" placeholder="10" />
+                                </div>
+                            </div>
+                            <div class="row ms-1 me-1">
+                                <button type="button" class="btn btn-primary basic-button translate" onclick="compute_video_waveform()">Process</button>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary basic-button translate" onclick="save_video_waveform()">Save</button>
-                    <button type="button" class="btn btn-secondary translate" onclick="close_image_as_video_modal()">Cancel</button>
+                    <button type="button" class="btn btn-secondary translate" onclick="close_image_as_video_modal()">Close</button>
                 </div>
             @WebUtil.ModalFooter()
             @WebUtil.ModalHeader("edit_model_modal", """Edit Model Metadata: <input type="text" class="modal_text_extra" id="edit_model_name" placeholder="Model Name" />""")

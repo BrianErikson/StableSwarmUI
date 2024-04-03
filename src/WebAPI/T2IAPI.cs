@@ -403,15 +403,19 @@ public static class T2IAPI
     /// <param name="frameEffect">The type of frame effect to apply to the video.</param>
     /// <param name="frameEffectShape">The shape of the frame effect.</param>
     /// <param name="duration">The duration of the video in seconds.</param>
+    /// <param name="frameSmoothing">Whether to apply frame smoothing to the video.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation. The task result contains a <see cref="JObject"/> with the generated video path or an error message.</returns>
     public static async Task<JObject> ImageAsVideo(
         Session session, 
         string path, 
         string frameEffect, 
         string frameEffectShape, 
+        string frameSmoothing,
         int duration)
     {
-        Logs.Info($"User {session.User.UserID} requested to generate a video from image path '{path}' with frame effect '{frameEffect}', shape '{frameEffectShape}', duration {duration}s");
+        Logs.Info($"User {session.User.UserID} requested to generate a video from image path '{path}' " +
+                  $"with frame effect '{frameEffect}', shape '{frameEffectShape}', duration {duration}s, " +
+                  $"and frame smoothing '{frameSmoothing}'.");
 
         if (duration <= 0)
         {
@@ -439,7 +443,7 @@ public static class T2IAPI
         }
 
         string outputPath = Path.Combine(Path.GetDirectoryName(inputPath), $"{Path.GetFileNameWithoutExtension(inputPath)}.mp4");
-        return await Video.ImageAsVideo(root, inputPath, outputPath, frameEffect, frameEffectShape, duration);
+        return await Video.ImageAsVideo(root, inputPath, outputPath, frameEffect, frameEffectShape, frameSmoothing, duration);
     }
 
     /// <summary>API route to delete an image.</summary>
