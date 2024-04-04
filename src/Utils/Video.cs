@@ -216,7 +216,7 @@ public class Video {
             .ToArray();
 
         // if there are not enough images in the folder or subfolders, return an error
-        if (files.Length < 2)
+        if (files.Length < 1)
         {
             Logs.Warning($"Not enough images with extension {ext} and resolution {inputWidth}x{inputHeight} in the folder '{folder}' to generate a video.");
             return new JObject() { ["error"] = "There are not enough images of that extension and resolution in the current folder to generate a video." };

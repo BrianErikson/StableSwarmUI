@@ -26,8 +26,13 @@ function render_video() {
         imagePath = $('#image_as_video_modal').find('.modal-image video source').attr('data-src');
     }
 
-    // The path is in the format 'View/local/...'. We need to convert it to a relative path for the server
-    imagePath = imagePath.replace('View/local/', '');
+    if (imagePath.startsWith('View/')) {
+        imagePath = imagePath.substring('View/'.length);
+        let firstSlash = imagePath.indexOf('/');
+        if (firstSlash != -1) {
+            imagePath = imagePath.substring(firstSlash + 1);
+        }
+    }
 
     // Disable the Render button
     $('#video-render-button').prop('disabled', true);

@@ -396,6 +396,16 @@ function setCurrentImage(src, metadata = '', batchId = '', previewGrow = false, 
         getRequiredElementById('imagehistorytabclickable').click();
         imageHistoryBrowser.navigate(folder);
     }, '', 'Opens the Image History tab and navigates to the folder containing this image');
+    quickAppendButton(buttons, 'View As Video', () => {
+        // Insert the image into the modal
+        $('#image_as_video_modal .modal-image').html(`<img src="${currentImgSrc}" class="img-fluid" alt="Source Image"/>`);
+        $('#image_as_video_modal').modal('show');
+
+        // If the stored duration is 3 seconds or less and can be rendered quickly, render the video automatically
+        if (get_video_duration_input() <= 3 && get_frame_smoothing_input() !== 'quality') {
+            render_video();
+        }
+    }, '', 'Opens the View Image As Video modal');
     extrasWrapper.appendChild(buttons);
     let data = createDiv(null, 'current-image-data');
     data.innerHTML = formatMetadata(metadata);
@@ -874,19 +884,6 @@ function describeImage(image) {
             label: 'Download',
             href: image.data.src,
             is_download: true
-        },
-        {
-            label: 'View as Video',
-            onclick: (e) => {
-                // Insert the image into the modal
-                $('#image_as_video_modal .modal-image').html(`<img src="${image.data.src}" class="img-fluid" alt="Source Image"/>`);
-                $('#image_as_video_modal').modal('show');
-
-                // If the stored duration is 3 seconds or less and can be rendered quickly, render the video automatically
-                if (get_video_duration_input() <= 3 && get_frame_smoothing_input() !== 'quality') {
-                    render_video();
-                }
-            }
         },
         {
             label: 'Delete',
