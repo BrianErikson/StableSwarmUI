@@ -271,10 +271,7 @@
             </div>
             @WebUtil.ModalHeader("image_as_video_modal", "Image Sequence as Video")
                 <div class="modal-body">
-                    <!-- For whatever reason, $().html() 'eats' the parent container when rendered, so we have to wrap it in a div -->
-                    <div>
-                        <div class="modal-image"/>
-                    </div>
+                    <video controls autoplay loop class="img-fluid w-100"><source id="modal-video-src" type="video/mp4"></video>
                     
                     <div class="input-group mb-3">
                         <div class="container p-3">

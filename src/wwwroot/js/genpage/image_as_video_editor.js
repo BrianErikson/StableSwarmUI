@@ -21,10 +21,7 @@ function get_frame_smoothing_input() {
 
 function render_video() {
     // Get the image path from the modal-image class
-    var imagePath = $('#image_as_video_modal').find('.modal-image img').attr('src');
-    if (imagePath === undefined) {
-        imagePath = $('#image_as_video_modal').find('.modal-image video source').attr('data-src');
-    }
+    var imagePath = $('#modal-video-src').attr('data-src');
 
     if (imagePath.startsWith('View/')) {
         imagePath = imagePath.substring('View/'.length);
@@ -57,18 +54,9 @@ function render_video() {
             return;
         }
 
-        // If the modal-image is an image, replace it with the video
-        var wwwSrc = 'View/local/' + data.video;
-        if ($('#image_as_video_modal').find('.modal-image img').length > 0) {
-            $('#image_as_video_modal .modal-image').html(`<video controls autoplay loop class="img-fluid"><source class="modal-image" data-src="${imagePath}" src="${wwwSrc}" type="video/mp4"></video>`);
-        }
-        // If the modal-image is a video, replace the source with the new video
-        else if ($('#image_as_video_modal').find('.modal-image video').length > 0) {
-            $('#image_as_video_modal .modal-image video source').attr('src', wwwSrc);
-
-            // Reload the video
-            $('#image_as_video_modal .modal-image video')[0].load();
-        }
+        // Update the video source
+        $('#modal-video-src').attr('src', 'View/local/' + data.video);
+        $('#image_as_video_modal video')[0].load();
     });
 }
 

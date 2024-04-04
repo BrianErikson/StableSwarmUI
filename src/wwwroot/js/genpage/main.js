@@ -398,7 +398,9 @@ function setCurrentImage(src, metadata = '', batchId = '', previewGrow = false, 
     }, '', 'Opens the Image History tab and navigates to the folder containing this image');
     quickAppendButton(buttons, 'View As Video', () => {
         // Insert the image into the modal
-        $('#image_as_video_modal .modal-image').html(`<img src="${currentImgSrc}" class="img-fluid" alt="Source Image"/>`);
+        $('#modal-video-src').attr('data-src', currentImgSrc);
+        $('#modal-video-src').attr('src', '');
+        $('#image_as_video_modal video')[0].load();
         $('#image_as_video_modal').modal('show');
 
         // If the stored duration is 3 seconds or less and can be rendered quickly, render the video automatically
