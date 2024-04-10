@@ -15,6 +15,9 @@
 }
 
 <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item secretexperimental" role="presentation">
+        <a class="nav-link translate secretexperimental" data-bs-toggle="tab" href="#Simple" id="simpletabbutton" aria-selected="false" tabindex="-1" role="tab">Simple</a>
+    </li>
     <li class="nav-item" role="presentation">
         <a class="nav-link active translate" data-bs-toggle="tab" href="#Text2Image" id="text2imagetabbutton" aria-selected="true" role="tab">Generate</a>
     </li>
@@ -30,6 +33,9 @@
     </li>
 </ul>
 <div class="tab-content tab-hundred">
+    <div class="tab-pane tab-pane-vw secretexperimental" id="Simple" role="tabpanel">
+        <div class="simpletabbrowserwrapper browser_container" id="simpletabbrowserwrapper"></div>
+    </div>
     <div class="tab-pane show active" style="line-height:0" id="Text2Image" role="tabpanel">
         <div class="t2i-top-bar-container" style="line-height:1.5">
             <div class="t2i-top-bar" id="t2i_top_bar">
@@ -77,8 +83,12 @@
                             <div class="added-image-area alt-prompt-added-image-area" id="alt_prompt_image_area"></div>
                         </div>
                         <div class="alt_prompt_main_line">
-                            <span class="alt-text-tokencount-wrapper"><span class="auto-input-prompt-tokencount alt-text-tokencount" title="Text-Encoder token count / chunk-size">0/75</span></span>
-                            <textarea id="alt_prompt_textbox" class="alt_prompt_textbox translate" rows="1" placeholder="Type your prompt here... (or, drag an image in to use ReVision)"></textarea>
+                            <span class="alt-text-tokencount-wrapper"><span class="auto-input-prompt-tokencount alt-text-tokencount" id="alt_text_tokencount" title="Text-Encoder token count / chunk-size">0/75</span></span>
+                            <div class="alt_prompt_textboxes">
+                                <textarea id="alt_prompt_textbox" class="alt_prompt_textbox translate" rows="1" placeholder="Type your prompt here... (or, drag an image in to use ReVision)"></textarea>
+                                <br>
+                                <textarea id="alt_negativeprompt_textbox" class="alt_prompt_textbox translate" rows="1" placeholder="Optionally, type a negative prompt here..."></textarea>
+                            </div>
                             <button class="alt-prompt-buttons alt-prompt-generate-button basic-button translate" id="alt_generate_button" oncontextmenu="doPopover('generate'); return false;" onclick="doGenerate()">Generate</button>
                             <button class="alt-prompt-buttons alt-prompt-center-button basic-button" id="alt_center_button" oncontextmenu="doPopover('generate_center'); return false;" onclick="doPopover('generate_center')">&#x2B9F;</button>
                             <button class="alt-prompt-buttons interrupt-button interrupt-button-none alt-interrupt" id="alt_interrupt_button" oncontextmenu="doPopover('interrupt'); return false;" onclick="doInterrupt()">&times;</button>
@@ -212,7 +222,7 @@
                         <div class="modal-body">
                             <textarea class="auto-text auto-text-block translate" id="preset_description" rows="3" placeholder="Preset description text..."></textarea>
                             <span class="form-check form-switch display-inline-block">
-                                <input class="auto-slider-toggle form-check-input translate" type="checkbox" id="new_preset_enable_image" title="Enable/disable image" onclick="doToggleEnable('new_preset_image')"> Use Image
+                                <input class="form-check-input translate" type="checkbox" id="new_preset_enable_image" title="Enable/disable image" onclick="doToggleEnable('new_preset_image')"> Use Image
                             </span>
                             <div id="new_preset_image" class="new_preset_image"></div>
                             <hr>
@@ -358,7 +368,7 @@
                     <div id="edit_model_is_negative_div">Is Negative Embedding: <span class="form-check form-switch display-inline-block"><input type="checkbox" id="edit_model_is_negative" class="slider-toggle form-check-input" title="If checked, embedding is for Negative Prompts. Otherwise, for the main prompt." /></span></div>
                     Description: <textarea class="auto-text auto-text-block translate" id="edit_model_description" rows="3" placeholder="Model description text..."></textarea>
                     <span class="form-check form-switch display-inline-block">
-                        <input class="auto-slider-toggle form-check-input translate" type="checkbox" id="edit_model_enable_image" title="Enable/disable image" onclick="doToggleEnable('edit_model_image')"> Use Image
+                        <input class="form-check-input translate" type="checkbox" id="edit_model_enable_image" title="Enable/disable image" onclick="doToggleEnable('edit_model_image')"> Use Image
                     </span>
                     <div id="edit_model_image" class="new_preset_image"></div>
                 </div>
@@ -373,7 +383,7 @@
                     <p class="translate">Prefix a line with <code>#</code> to make it a comment (ie won't be counted as an option).</p>
                     Options: <textarea class="auto-text auto-text-block" id="edit_wildcard_contents" rows="15" placeholder="Wildcard options (1 per line)"></textarea>
                     <span class="form-check form-switch display-inline-block">
-                        <input class="auto-slider-toggle form-check-input translate" type="checkbox" id="edit_wildcard_enable_image" title="Enable/disable image" onclick="doToggleEnable('edit_wildcard_image')"> Use Image
+                        <input class="form-check-input translate" type="checkbox" id="edit_wildcard_enable_image" title="Enable/disable image" onclick="doToggleEnable('edit_wildcard_image')"> Use Image
                     </span>
                     <div id="edit_wildcard_image" class="new_preset_image"></div>
                 </div>
@@ -693,7 +703,7 @@
                 <div class="backend_add_button_container">
                     Add new backend of type:
                     <span class="form-check form-switch display-inline-block">
-                        <input class="auto-slider-toggle form-check-input translate" type="checkbox" id="backends_show_advanced" title="Show Advanced Backend Types" onclick="toggleShowAdvancedBackends()" autocomplete="off"> Show Advanced
+                        <input class="form-check-input translate" type="checkbox" id="backends_show_advanced" title="Show Advanced Backend Types" onclick="toggleShowAdvancedBackends()" autocomplete="off"> Show Advanced
                     </span>
                     <div id="backend_add_buttons"></div>
                 </div>
@@ -730,6 +740,7 @@
     <script src="/js/genpage/params.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/utiltab.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/image_editor.js?vary=@Utilities.VaryID"></script>
+    <script src="/js/genpage/simpletab.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/main.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/settings_editor.js?vary=@Utilities.VaryID"></script>
     <script src="/js/genpage/image_as_video_editor.js?vary=@Utilities.VaryID"></script>

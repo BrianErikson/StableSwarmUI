@@ -247,7 +247,7 @@ public class T2IParamTypes
     public static T2IRegisteredParam<int> Images, Steps, Width, Height, BatchSize, ExactBackendID, VAETileSize, ClipStopAtLayer, VideoFrames, VideoMotionBucket, VideoFPS, VideoSteps, RefinerSteps, CascadeLatentCompression;
     public static T2IRegisteredParam<long> Seed, VariationSeed, WildcardSeed;
     public static T2IRegisteredParam<double> CFGScale, VariationSeedStrength, InitImageCreativity, InitImageResetToNorm, RefinerControl, RefinerUpscale, ReVisionStrength, AltResolutionHeightMult,
-        FreeUBlock1, FreeUBlock2, FreeUSkip1, FreeUSkip2, GlobalRegionFactor, EndStepsEarly, SamplerSigmaMin, SamplerSigmaMax, SamplerRho, VideoAugmentationLevel, VideoCFG, VideoMinCFG;
+        FreeUBlock1, FreeUBlock2, FreeUSkip1, FreeUSkip2, GlobalRegionFactor, EndStepsEarly, SamplerSigmaMin, SamplerSigmaMax, SamplerRho, VideoAugmentationLevel, VideoCFG, VideoMinCFG, IP2PCFG2;
     public static T2IRegisteredParam<Image> InitImage, MaskImage;
     public static T2IRegisteredParam<T2IModel> Model, RefinerModel, VAE, ReVisionModel, RegionalObjectInpaintingModel, VideoModel, RefinerVAE;
     public static T2IRegisteredParam<List<string>> Loras, LoraWeights;
@@ -286,7 +286,7 @@ public class T2IParamTypes
             ));
         GroupAdvancedModelAddons = new("Advanced Model Addons", Open: false, IsAdvanced: true);
         NegativePrompt = Register<string>(new("Negative Prompt", "Like the input prompt text, but describe what NOT to generate.\nTell the AI things you don't want to see.",
-            "", IgnoreIf: "", Clean: ApplyStringEdit, Examples: ["ugly, bad, gross", "lowres, low quality"], OrderPriority: -90, ViewType: ParamViewType.PROMPT, ChangeWeight: -5
+            "", IgnoreIf: "", Clean: ApplyStringEdit, Examples: ["ugly, bad, gross", "lowres, low quality"], OrderPriority: -90, ViewType: ParamViewType.PROMPT, ChangeWeight: -5, VisibleNormally: false
             ));
         GroupRevision = new("ReVision", Open: false, Toggles: true, OrderPriority: -70);
         ReVisionStrength = Register<double>(new("ReVision Strength", "How strong to apply ReVision image inputs.\nSet to 0 to disable ReVision processing.",
@@ -525,6 +525,9 @@ public class T2IParamTypes
             ));
         SamplerRho = Register<double>(new("Sampler Rho", "Rho value for the sampler.\nOnly applies to Karras/Exponential schedulers.",
             "7", Min: 0, Max: 1000, Step: 0.01, Toggleable: true, IsAdvanced: true, Group: GroupAdvancedSampling
+            ));
+        IP2PCFG2 = Register<double>(new("IP2P CFG 2", "CFG Scale for Cond2-Negative in InstructPix2Pix (Edit) models.",
+            "1.5", Toggleable: true, Min: 1, Max: 100, ViewMax: 20, Step: 0.5, Examples: ["1.5", "2"], ViewType: ParamViewType.SLIDER, Group: GroupAdvancedSampling
             ));
         ClipStopAtLayer = Register<int>(new("CLIP Stop At Layer", "What layer of CLIP to stop at, from the end.\nAlso known as 'CLIP Skip'. Default CLIP Skip is -1 for SDv1, some models prefer -2.\nSDv2, SDXL, and beyond do not need this set ever.",
             "-1", Min: -24, Max: -1, Step: 1, Toggleable: true, IsAdvanced: true, Group: GroupAdvancedSampling

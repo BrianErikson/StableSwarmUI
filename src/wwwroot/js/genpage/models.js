@@ -314,8 +314,8 @@ class ModelBrowserWrapper {
         else if (this.subType == 'Embedding') {
             buttons = [
                 { label: 'Add To Prompt', onclick: () => embedAddToPrompt(model.data, 'alt_prompt_textbox') },
-                { label: 'Add To Negative', onclick: () => embedAddToPrompt(model.data, 'input_negativeprompt') },
-                { label: 'Remove All Usages', onclick: () => { embedClearFromPrompt(model.data, 'alt_prompt_textbox'); embedClearFromPrompt(model.data, 'input_negativeprompt'); } }
+                { label: 'Add To Negative', onclick: () => embedAddToPrompt(model.data, 'alt_negativeprompt_textbox') },
+                { label: 'Remove All Usages', onclick: () => { embedClearFromPrompt(model.data, 'alt_prompt_textbox'); embedClearFromPrompt(model.data, 'alt_negativeprompt_textbox'); } }
             ];
         }
         let name = cleanModelName(model.data.name);
@@ -347,7 +347,7 @@ class ModelBrowserWrapper {
             interject = `<b>(Incompatible with current model!)</b><br>`;
         }
         if (model.data.is_safetensors) {
-            let getLine = (label, val) => `<b>${label}:</b> ${val == null ? "(Unset)" : escapeHtml(val)}<br>`;
+            let getLine = (label, val) => `<b>${label}:</b> <span>${val == null ? "(Unset)" : escapeHtml(val)}</span><br>`;
             let getOptLine = (label, val) => val ? getLine(label, val) : '';
             if (this.subType == 'LoRA' || this.subType == 'Stable-Diffusion') {
                 interject += `${getLine("Resolution", `${model.data.standard_width}x${model.data.standard_height}`)}`;
@@ -445,7 +445,7 @@ function embedAddToPrompt(model, element) {
 }
 
 function selectEmbedding(model) {
-    let promptBox = getRequiredElementById(model.is_negative_embedding ? 'input_negativeprompt' : 'alt_prompt_textbox');
+    let promptBox = getRequiredElementById(model.is_negative_embedding ? 'alt_negativeprompt_textbox' : 'alt_prompt_textbox');
     let chunk = `<embed:${model.name}>`;
     if (promptBox.value.endsWith(chunk)) {
         promptBox.value = promptBox.value.substring(0, promptBox.value.length - chunk.length).trim();
